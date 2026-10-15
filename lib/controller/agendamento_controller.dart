@@ -35,14 +35,6 @@ class AgendamentoController extends ChangeNotifier {
 
   Agendamento? get proximo => proximos.firstOrNull;
 
-  /// Programa de fidelidade: a cada [metaRespeito] cortes, um é por conta da casa.
-  static const metaRespeito = 10;
-
-  int get cortesConcluidos =>
-      _lista.where((a) => a.status == StatusAgendamento.concluido).length;
-
-  int get respeito => cortesConcluidos % metaRespeito;
-
   int get pendentesDeAvaliacao => _lista.where((a) => a.podeAvaliar).length;
 
   void cancelar(Agendamento agendamento) {
@@ -94,7 +86,8 @@ class AgendamentoController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void escolherCorte(Corte novo) {
+  /// Escolhe o serviço; `null` desmarca.
+  void escolherCorte(Corte? novo) {
     corte = novo;
     notifyListeners();
   }

@@ -1,7 +1,6 @@
 class Barbeiro {
   final String id;
   final String nome;
-  final String apelido;
   final String foto;
   final String especialidade;
   final String bio;
@@ -20,7 +19,6 @@ class Barbeiro {
   const Barbeiro({
     required this.id,
     required this.nome,
-    required this.apelido,
     required this.foto,
     required this.especialidade,
     required this.bio,

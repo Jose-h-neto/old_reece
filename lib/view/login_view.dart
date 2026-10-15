@@ -33,10 +33,7 @@ class _LoginViewState extends State<LoginView> {
 
   Future<void> _entrar() async {
     FocusScope.of(context).unfocus();
-    if (!_form.currentState!.validate()) {
-      mostrarMensagem(context, 'Confere os campos destacados.', erro: true);
-      return;
-    }
+    if (!_form.currentState!.validate()) return;
 
     final erro = await ctrl.entrar(_email.text, _senha.text);
     if (!mounted) return;
@@ -72,7 +69,7 @@ class _LoginViewState extends State<LoginView> {
                         Center(
                           child: Image.asset(
                             'assets/images/logo.png',
-                            height: 190,
+                            height: 150,
                             semanticLabel: 'Logotipo Old Reece Barbearia',
                           ),
                         ),

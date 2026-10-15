@@ -118,11 +118,7 @@ class _CartaoCorte extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: Estilos.displayMd.copyWith(fontSize: 20),
           ),
-          Text(
-            '${c.categoria.rotulo} · ${Formatos.duracao(c.duracaoMin)}'
-                .toUpperCase(),
-            style: Estilos.label,
-          ),
+          Text(Formatos.duracao(c.duracaoMin), style: Estilos.label),
           const SizedBox(height: Espaco.s1),
           PrecoHud(c.preco, hud: false, tamanho: 22),
         ],

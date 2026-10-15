@@ -77,64 +77,7 @@ class Estrelas extends StatelessWidget {
   }
 }
 
-enum TomBarra { vida, folego, respeito, grove }
-
-/// Barra fina com borda preta, como vida e fôlego no HUD.
-class BarraHud extends StatelessWidget {
-  final String rotulo;
-  final String? rotuloValor;
-  final double valor;
-  final double maximo;
-  final TomBarra tom;
-
-  const BarraHud({
-    super.key,
-    required this.rotulo,
-    required this.valor,
-    this.maximo = 1,
-    this.rotuloValor,
-    this.tom = TomBarra.respeito,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final (trilho, preenchimento) = switch (tom) {
-      TomBarra.vida => (Cores.healthSoft, Cores.health),
-      TomBarra.folego => (Cores.breathSoft, Cores.breath),
-      TomBarra.respeito => (Cores.goldSoft, Cores.goldFill),
-      TomBarra.grove => (Cores.groveSoft, Cores.grove),
-    };
-    final fracao = maximo == 0 ? 0.0 : (valor / maximo).clamp(0.0, 1.0);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(child: Text(rotulo.toUpperCase(), style: Estilos.label)),
-            if (rotuloValor != null)
-              Text(rotuloValor!.toUpperCase(), style: Estilos.label),
-          ],
-        ),
-        const SizedBox(height: Espaco.s1),
-        Container(
-          height: 14,
-          decoration: BoxDecoration(
-            color: trilho,
-            border: Border.all(color: Cores.outline, width: 2),
-          ),
-          child: FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: fracao,
-            child: ColoredBox(color: preenchimento),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-enum TomEtiqueta { neutro, grove, gold, purple, breath, health }
+enum TomEtiqueta { neutro, grove, gold, health }
 
 /// Etiqueta reta nas cores das gangues. Texto curto, até duas palavras.
 class Etiqueta extends StatelessWidget {
@@ -149,8 +92,6 @@ class Etiqueta extends StatelessWidget {
       TomEtiqueta.neutro => (Cores.surfaceSunken, Cores.ink),
       TomEtiqueta.grove => (Cores.groveSoft, Cores.grove),
       TomEtiqueta.gold => (Cores.goldSoft, Cores.gold),
-      TomEtiqueta.purple => (Cores.purpleSoft, Cores.purple),
-      TomEtiqueta.breath => (Cores.breathSoft, Cores.breath),
       TomEtiqueta.health => (Cores.healthSoft, Cores.health),
     };
     return Container(
@@ -244,8 +185,7 @@ class PainelMissao extends StatelessWidget {
   }
 }
 
-/// Faixa com os 7 dias da semana; os dias de atendimento ficam em verde e
-/// o dia de hoje (quando atende) em ouro.
+/// Faixa com os 7 dias da semana; os dias de atendimento ficam em verde.
 class DiasAtendimento extends StatelessWidget {
   final List<int> dias;
 
@@ -253,7 +193,6 @@ class DiasAtendimento extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hoje = DateTime.now().weekday;
     return Row(
       children: [
         for (var d = DateTime.monday; d <= DateTime.sunday; d++)
@@ -268,32 +207,19 @@ class DiasAtendimento extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: !dias.contains(d)
-                      ? Cores.surfaceSunken
-                      : d == hoje
-                      ? Cores.goldSoft
-                      : Cores.groveSoft,
+                  color: dias.contains(d)
+                      ? Cores.groveSoft
+                      : Cores.surfaceSunken,
                   border: Border.all(
-                    color: !dias.contains(d)
-                        ? Cores.line
-                        : d == hoje
-                        ? Cores.gold
-                        : Cores.grove,
+                    color: dias.contains(d) ? Cores.grove : Cores.line,
                     width: 2,
                   ),
                 ),
                 child: Text(
                   Formatos.diasCurtos[d - 1],
                   style: Estilos.label.copyWith(
-                    fontSize: 8,
-                    color: !dias.contains(d)
-                        ? Cores.inkMuted
-                        : d == hoje
-                        ? Cores.gold
-                        : Cores.grove,
-                    decoration: dias.contains(d)
-                        ? null
-                        : TextDecoration.lineThrough,
+                    fontSize: 9,
+                    color: dias.contains(d) ? Cores.grove : Cores.inkMuted,
                   ),
                 ),
               ),

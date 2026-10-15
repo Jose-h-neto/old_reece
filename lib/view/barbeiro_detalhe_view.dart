@@ -36,31 +36,18 @@ class BarbeiroDetalheView extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: Espaco.s6),
         children: [
           SizedBox(
-            height: 320,
+            height: 260,
             child: Stack(
               fit: StackFit.expand,
               children: [
                 Image.asset(b.foto, fit: BoxFit.cover),
-                const DecoratedBox(
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: Cores.outline, width: 3),
-                    ),
-                  ),
-                ),
                 Positioned(
                   left: Espaco.s4,
                   right: Espaco.s4,
                   bottom: Espaco.s4,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextoContorno(b.nome, estilo: Estilos.zone, contorno: 3),
-                      TextoContorno(
-                        '“${b.frase}”',
-                        estilo: Estilos.subtitle.copyWith(color: Cores.onHud),
-                      ),
-                    ],
+                  child: TextoContorno(
+                    '“${b.frase}”',
+                    estilo: Estilos.subtitle.copyWith(color: Cores.onHud),
                   ),
                 ),
               ],
@@ -73,33 +60,16 @@ class BarbeiroDetalheView extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Expanded(
-                      child: _Dado(
-                        rotulo: 'Experiência',
-                        valor: '${b.anosExperiencia} anos',
-                      ),
-                    ),
+                    Estrelas(valor: b.estrelas, tamanho: 16),
                     const SizedBox(width: Espaco.s3),
-                    Expanded(
-                      child: Painel(
-                        padding: const EdgeInsets.all(Espaco.s3),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('PROCURADO', style: Estilos.label),
-                            const SizedBox(height: Espaco.s1),
-                            FittedBox(child: Estrelas(valor: b.estrelas)),
-                          ],
-                        ),
-                      ),
+                    Text(
+                      '${b.anosExperiencia} anos de experiência',
+                      style: Estilos.bodySm,
                     ),
                   ],
                 ),
-                const SizedBox(height: Espaco.s6),
-                TituloSecao(b.apelido),
+                const SizedBox(height: Espaco.s3),
                 Text(b.bio, style: Estilos.body),
-                const SizedBox(height: Espaco.s2),
-                Etiqueta(b.especialidade, tom: TomEtiqueta.breath),
                 const SizedBox(height: Espaco.s6),
                 const TituloSecao('Dias de atendimento'),
                 DiasAtendimento(b.diasAtendimento),
@@ -141,31 +111,6 @@ class BarbeiroDetalheView extends StatelessWidget {
             aoPressionar: () => _agendar(context),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _Dado extends StatelessWidget {
-  final String rotulo;
-  final String valor;
-
-  const _Dado({required this.rotulo, required this.valor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Painel(
-      padding: const EdgeInsets.all(Espaco.s3),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(rotulo.toUpperCase(), style: Estilos.label),
-          const SizedBox(height: Espaco.s1),
-          Text(
-            valor.toUpperCase(),
-            style: Estilos.displayMd.copyWith(fontSize: 20, color: Cores.gold),
-          ),
-        ],
       ),
     );
   }

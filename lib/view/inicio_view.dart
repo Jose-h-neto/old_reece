@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../controller/agendamento_controller.dart';
 import '../controller/auth_controller.dart';
-import '../controller/barbeiro_controller.dart';
 import '../controller/corte_controller.dart';
 import '../controller/home_controller.dart';
 import '../core/app_routes.dart';
@@ -13,10 +12,9 @@ import '../model/agendamento.dart';
 import '../widgets/hud.dart';
 import '../widgets/painel.dart';
 import '../widgets/sa_botao.dart';
-import '../widgets/texto_contorno.dart';
 
-/// Funcionalidade: painel inicial no estilo HUD — saudação, barra de
-/// respeito (fidelidade), próxima missão e atalhos.
+/// Funcionalidade: tela inicial — saudação, próximo horário, atalho para
+/// agendar e os cortes em alta.
 class InicioView extends StatelessWidget {
   const InicioView({super.key});
 
@@ -33,38 +31,23 @@ class InicioView extends StatelessWidget {
         children: [
           TituloZona(
             'E aí, ${auth.primeiroNome}',
-            subtitulo: 'Old Reece · Hair & Facial Studio',
-          ),
-          const SizedBox(height: Espaco.s4),
-          Painel(
-            child: Column(
-              children: [
-                BarraHud(
-                  rotulo: 'Respeito',
-                  rotuloValor:
-                      '${agenda.respeito}/${AgendamentoController.metaRespeito}',
-                  valor: agenda.respeito.toDouble(),
-                  maximo: AgendamentoController.metaRespeito.toDouble(),
-                ),
-                const SizedBox(height: Espaco.s2),
-                Text(
-                  'Faltam ${AgendamentoController.metaRespeito - agenda.respeito} '
-                  'cortes pro próximo por conta da casa.',
-                  style: Estilos.bodySm,
-                ),
-              ],
-            ),
+            subtitulo: 'Bora dar um trato no visual?',
           ),
           const SizedBox(height: Espaco.s6),
-          const TituloSecao('Próxima missão'),
+          const TituloSecao('Seu próximo horário'),
           agenda.proximo == null
-              ? _SemMissao()
-              : _ProximaMissao(
+              ? const Painel(
+                  child: Text(
+                    'Nenhum horário marcado ainda.',
+                    style: Estilos.bodySm,
+                  ),
+                )
+              : _ProximoHorario(
                   agendamento: agenda.proximo!,
                   aoTocar: () => home.irPara(HomeController.agenda),
                 ),
           if (agenda.pendentesDeAvaliacao > 0) ...[
-            const SizedBox(height: Espaco.s4),
+            const SizedBox(height: Espaco.s3),
             Painel(
               cor: Cores.goldSoft,
               corBorda: Cores.gold,
@@ -76,9 +59,9 @@ class InicioView extends StatelessWidget {
                   Expanded(
                     child: Text(
                       agenda.pendentesDeAvaliacao == 1
-                          ? 'Tem 1 atendimento esperando tua avaliação.'
-                          : 'Tem ${agenda.pendentesDeAvaliacao} atendimentos '
-                                'esperando tua avaliação.',
+                          ? '1 atendimento esperando tua avaliação'
+                          : '${agenda.pendentesDeAvaliacao} atendimentos '
+                                'esperando tua avaliação',
                       style: Estilos.body.copyWith(color: Cores.gold),
                     ),
                   ),
@@ -87,51 +70,19 @@ class InicioView extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: Espaco.s6),
-          TituloSecao(
-            'Barbeiros',
-            acao: 'Ver todos',
-            aoTocarAcao: () => home.irPara(HomeController.barbeiros),
+          const SizedBox(height: Espaco.s4),
+          SaBotao.primario(
+            rotulo: 'Agendar horário',
+            icone: Icons.event_available,
+            aoPressionar: () {
+              agenda.iniciar();
+              Navigator.pushNamed(context, AppRoutes.agendar);
+            },
           ),
-          SizedBox(
-            height: 150,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              clipBehavior: Clip.none,
-              itemCount: g<BarbeiroController>().barbeiros.length,
-              separatorBuilder: (_, _) => const SizedBox(width: Espaco.s3),
-              itemBuilder: (context, i) {
-                final b = g<BarbeiroController>().barbeiros[i];
-                return SizedBox(
-                  width: 112,
-                  child: Painel(
-                    padding: const EdgeInsets.all(Espaco.s2),
-                    aoTocar: () => Navigator.pushNamed(
-                      context,
-                      AppRoutes.barbeiroDetalhe,
-                      arguments: b,
-                    ),
-                    child: Column(
-                      children: [
-                        FotoMoldura(b.foto, tamanho: 84),
-                        const SizedBox(height: Espaco.s2),
-                        Text(
-                          b.nome.toUpperCase(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Estilos.displayMd.copyWith(fontSize: 18),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: Espaco.s6),
+          const SizedBox(height: Espaco.s8),
           TituloSecao(
             'Em alta no bairro',
-            acao: 'Catálogo',
+            acao: 'Ver cortes',
             aoTocarAcao: () => home.irPara(HomeController.cortes),
           ),
           for (final c in g<CorteController>().destaques) ...[
@@ -142,7 +93,7 @@ class InicioView extends StatelessWidget {
               },
               child: Row(
                 children: [
-                  FotoMoldura(c.imagem, tamanho: 64),
+                  FotoMoldura(c.imagem, tamanho: 56),
                   const SizedBox(width: Espaco.s3),
                   Expanded(
                     child: Column(
@@ -171,43 +122,11 @@ class InicioView extends StatelessWidget {
   }
 }
 
-class _SemMissao extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Painel(
-      destaque: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextoContorno(
-            'NENHUMA MISSÃO MARCADA',
-            estilo: Estilos.displayMd.copyWith(color: Cores.ink),
-          ),
-          const SizedBox(height: Espaco.s1),
-          const Text(
-            'Esse cabelo tá pedindo um trato. Escolhe o barbeiro e o horário.',
-            style: Estilos.bodySm,
-          ),
-          const SizedBox(height: Espaco.s4),
-          SaBotao.primario(
-            rotulo: 'Agendar horário',
-            icone: Icons.event_available,
-            aoPressionar: () {
-              g<AgendamentoController>().iniciar();
-              Navigator.pushNamed(context, AppRoutes.agendar);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProximaMissao extends StatelessWidget {
+class _ProximoHorario extends StatelessWidget {
   final Agendamento agendamento;
   final VoidCallback aoTocar;
 
-  const _ProximaMissao({required this.agendamento, required this.aoTocar});
+  const _ProximoHorario({required this.agendamento, required this.aoTocar});
 
   @override
   Widget build(BuildContext context) {
@@ -217,26 +136,24 @@ class _ProximaMissao extends StatelessWidget {
       aoTocar: aoTocar,
       child: Row(
         children: [
-          FotoMoldura(a.barbeiro.foto, tamanho: 72),
+          FotoMoldura(a.barbeiro.foto, tamanho: 64),
           const SizedBox(width: Espaco.s3),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  a.corte.nome.toUpperCase(),
-                  style: Estilos.displayMd.copyWith(fontSize: 22),
-                ),
-                Text('com ${a.barbeiro.nome}', style: Estilos.bodySm),
-                const SizedBox(height: Espaco.s1),
-                Text(
                   Formatos.dataHora(a.data),
-                  style: Estilos.caption.copyWith(color: Cores.gold),
+                  style: Estilos.subtitle.copyWith(color: Cores.gold),
+                ),
+                Text(
+                  '${a.corte.nome} com ${a.barbeiro.nome}',
+                  style: Estilos.bodySm,
                 ),
               ],
             ),
           ),
-          PrecoHud(a.corte.preco, hud: false, tamanho: 22),
+          const Icon(Icons.chevron_right, color: Cores.inkMuted),
         ],
       ),
     );

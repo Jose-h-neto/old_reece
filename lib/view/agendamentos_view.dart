@@ -27,22 +27,21 @@ class AgendamentosView extends StatelessWidget {
         final historico = ctrl.historico;
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(
-            Espaco.s4,
-            Espaco.s4,
-            Espaco.s4,
-            96, // espaço para o botão flutuante
-          ),
+          padding: const EdgeInsets.all(Espaco.s4),
           children: [
-            const TituloSecao('Próximas missões'),
-            if (proximos.isEmpty)
-              const Painel(
-                child: Text(
-                  'Nada marcado por enquanto. Toca em AGENDAR pra escolher '
-                  'barbeiro e horário.',
-                  style: Estilos.bodySm,
-                ),
+            const TituloSecao('Próximos'),
+            if (proximos.isEmpty) ...[
+              const Text('Nada marcado por enquanto.', style: Estilos.bodySm),
+              const SizedBox(height: Espaco.s3),
+              SaBotao.primario(
+                rotulo: 'Agendar horário',
+                icone: Icons.event_available,
+                aoPressionar: () {
+                  ctrl.iniciar();
+                  Navigator.pushNamed(context, AppRoutes.agendar);
+                },
               ),
+            ],
             for (final a in proximos) ...[
               _ItemAgendamento(a),
               const SizedBox(height: Espaco.s3),
@@ -70,7 +69,7 @@ class _ItemAgendamento extends StatelessWidget {
   Future<void> _cancelar(BuildContext context) async {
     final ok = await confirmar(
       context,
-      titulo: 'Cancelar missão?',
+      titulo: 'Cancelar horário?',
       mensagem:
           '${agendamento.corte.nome} com ${agendamento.barbeiro.nome}, '
           '${Formatos.dataHora(agendamento.data)}.',
@@ -79,29 +78,25 @@ class _ItemAgendamento extends StatelessWidget {
     );
     if (!ok || !context.mounted) return;
     g<AgendamentoController>().cancelar(agendamento);
-    mostrarMensagem(context, 'Missão cancelada. A cadeira foi liberada.');
+    mostrarMensagem(context, 'Horário cancelado. A cadeira foi liberada.');
   }
 
   @override
   Widget build(BuildContext context) {
     final a = agendamento;
-    final (tom, cancelado) = switch (a.status) {
-      StatusAgendamento.agendado => (TomEtiqueta.grove, false),
-      StatusAgendamento.concluido => (TomEtiqueta.breath, false),
-      StatusAgendamento.cancelado => (TomEtiqueta.health, true),
-    };
+    final agendado = a.status == StatusAgendamento.agendado;
+    final cancelado = a.status == StatusAgendamento.cancelado;
 
     return Painel(
-      destaque: a.status == StatusAgendamento.agendado,
+      destaque: agendado,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Opacity(
                 opacity: cancelado ? 0.5 : 1,
-                child: FotoMoldura(a.barbeiro.foto, tamanho: 60),
+                child: FotoMoldura(a.barbeiro.foto, tamanho: 52),
               ),
               const SizedBox(width: Espaco.s3),
               Expanded(
@@ -109,73 +104,51 @@ class _ItemAgendamento extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      a.corte.nome.toUpperCase(),
-                      style: Estilos.displayMd.copyWith(
-                        fontSize: 20,
-                        color: cancelado ? Cores.inkMuted : Cores.ink,
+                      Formatos.dataHora(a.data),
+                      style: Estilos.body.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: agendado ? Cores.gold : Cores.ink,
                         decoration: cancelado
                             ? TextDecoration.lineThrough
                             : null,
                       ),
                     ),
-                    Text('com ${a.barbeiro.nome}', style: Estilos.bodySm),
-                    const SizedBox(height: 2),
                     Text(
-                      Formatos.dataHora(a.data),
-                      style: Estilos.caption.copyWith(
-                        color: a.status == StatusAgendamento.agendado
-                            ? Cores.gold
-                            : Cores.inkMuted,
-                      ),
+                      '${a.corte.nome} com ${a.barbeiro.nome}',
+                      style: Estilos.bodySm,
                     ),
                   ],
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Etiqueta(a.status.rotulo, tom: tom),
-                  const SizedBox(height: Espaco.s2),
-                  PrecoHud(a.corte.preco, hud: false, tamanho: 18),
-                ],
-              ),
+              if (!agendado)
+                Etiqueta(
+                  a.status.rotulo,
+                  tom: cancelado ? TomEtiqueta.health : TomEtiqueta.neutro,
+                ),
             ],
           ),
-          if (a.status == StatusAgendamento.agendado) ...[
-            const SizedBox(height: Espaco.s3),
+          if (agendado)
             Align(
               alignment: Alignment.centerRight,
-              child: SaBotao(
-                rotulo: 'Cancelar',
-                icone: Icons.close,
-                variante: VarianteBotao.perigo,
-                aoPressionar: () => _cancelar(context),
+              child: TextButton(
+                style: TextButton.styleFrom(foregroundColor: Cores.health),
+                onPressed: () => _cancelar(context),
+                child: const Text('CANCELAR'),
               ),
             ),
-          ],
           if (a.podeAvaliar) ...[
             const SizedBox(height: Espaco.s3),
-            Align(
-              alignment: Alignment.centerRight,
-              child: SaBotao(
-                rotulo: 'Avaliar',
-                icone: Icons.star_outline,
-                aoPressionar: () => Navigator.pushNamed(
-                  context,
-                  AppRoutes.avaliar,
-                  arguments: a,
-                ),
-              ),
+            SaBotao(
+              rotulo: 'Avaliar atendimento',
+              icone: Icons.star_outline,
+              largo: true,
+              aoPressionar: () =>
+                  Navigator.pushNamed(context, AppRoutes.avaliar, arguments: a),
             ),
           ],
           if (a.avaliacao != null) ...[
-            const SizedBox(height: Espaco.s3),
-            Row(
-              children: [
-                const Text('TUA NOTA  ', style: Estilos.label),
-                Estrelas(valor: a.avaliacao!, tamanho: 14),
-              ],
-            ),
+            const SizedBox(height: Espaco.s2),
+            Estrelas(valor: a.avaliacao!, tamanho: 14),
             if (a.comentario != null) ...[
               const SizedBox(height: Espaco.s1),
               Text('“${a.comentario}”', style: Estilos.bodySm),

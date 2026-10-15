@@ -89,7 +89,7 @@ class TituloSecao extends StatelessWidget {
           Expanded(
             child: Text(
               texto.toUpperCase(),
-              style: Estilos.label.copyWith(fontSize: 10),
+              style: Estilos.label.copyWith(fontSize: 12, color: Cores.ink),
             ),
           ),
           if (acao != null)

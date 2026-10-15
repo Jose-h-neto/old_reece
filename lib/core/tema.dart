@@ -26,18 +26,8 @@ abstract class Cores {
   static const healthSoft = Color(0xFF3A1311);
   static const onHealth = Color(0xFF0D0D0B);
 
-  static const breath = Color(0xFF9CC2EE);
-  static const breathSoft = Color(0xFF15243A);
-
-  static const purple = Color(0xFFC08FE0);
-  static const purpleSoft = Color(0xFF2C1838);
-
-  static const sunset = Color(0xFFF08A45);
-
   static const hudPanel = Color(0xD1000000);
   static const onHud = Color(0xFFF3ECDA);
-  static const onHudMuted = Color(0xFFB3AA94);
-  static const hudAccent = Color(0xFFEAB53C);
 }
 
 /// Famílias tipográficas: cada uma com um papel só.
@@ -88,7 +78,7 @@ abstract class Estilos {
   );
   static const label = TextStyle(
     fontFamily: Fontes.menu,
-    fontSize: 9,
+    fontSize: 10,
     height: 1.6,
     letterSpacing: 1.1,
     color: Cores.inkMuted,
@@ -235,10 +225,6 @@ ThemeData criarTema() {
         color: Cores.ink,
       ),
       contentTextStyle: Estilos.body,
-    ),
-    drawerTheme: const DrawerThemeData(
-      backgroundColor: Cores.surfaceSunken,
-      shape: RoundedRectangleBorder(),
     ),
     listTileTheme: const ListTileThemeData(
       iconColor: Cores.inkMuted,

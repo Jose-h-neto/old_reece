@@ -115,7 +115,6 @@ abstract class DadosMock {
     Barbeiro(
       id: 'reece',
       nome: 'Old Reece',
-      apelido: 'O Dono',
       foto: 'lib/barbers/reece.webp',
       especialidade: 'Cortes clássicos e barba',
       bio:
@@ -147,7 +146,6 @@ abstract class DadosMock {
     Barbeiro(
       id: 'cesar',
       nome: 'César',
-      apelido: 'O Estiloso',
       foto: 'lib/barbers/cesar.webp',
       especialidade: 'Raspados, moicano e bigode',
       bio:
@@ -175,7 +173,6 @@ abstract class DadosMock {
     Barbeiro(
       id: 'ryder',
       nome: 'Ryder',
-      apelido: 'O Ligeiro',
       foto: 'lib/barbers/ryder.webp',
       especialidade: 'Dreads, black power e barba',
       bio:

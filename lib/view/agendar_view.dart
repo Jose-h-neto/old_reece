@@ -8,6 +8,7 @@ import '../core/dependencias.dart';
 import '../core/formatos.dart';
 import '../core/tema.dart';
 import '../data/dados_mock.dart';
+import '../model/barbeiro.dart';
 import '../model/corte.dart';
 import '../widgets/hud.dart';
 import '../widgets/painel.dart';
@@ -34,25 +35,23 @@ class AgendarView extends StatelessWidget {
     final ctrl = g<AgendamentoController>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('NOVA MISSÃO')),
+      appBar: AppBar(title: const Text('AGENDAR HORÁRIO')),
       body: ListenableBuilder(
         listenable: ctrl,
         builder: (context, _) => ListView(
           padding: const EdgeInsets.all(Espaco.s4),
           children: [
-            const TituloSecao('1 · Escolhe o barbeiro'),
+            const TituloSecao('1. Barbeiro'),
             _EscolhaBarbeiro(ctrl),
             const SizedBox(height: Espaco.s6),
-            const TituloSecao('2 · Escolhe o serviço'),
+            const TituloSecao('2. Serviço'),
             _EscolhaCorte(ctrl),
             const SizedBox(height: Espaco.s6),
-            const TituloSecao('3 · Dia da semana'),
+            const TituloSecao('3. Dia'),
             _EscolhaDia(ctrl),
             const SizedBox(height: Espaco.s6),
-            const TituloSecao('4 · Horário'),
+            const TituloSecao('4. Horário'),
             _EscolhaHora(ctrl),
-            const SizedBox(height: Espaco.s6),
-            _Resumo(ctrl),
           ],
         ),
       ),
@@ -65,13 +64,23 @@ class AgendarView extends StatelessWidget {
           ),
           child: ListenableBuilder(
             listenable: ctrl,
-            builder: (context, _) => SaBotao.primario(
-              rotulo: 'Iniciar missão',
-              icone: Icons.flag_outlined,
-              carregando: ctrl.salvando,
-              aoPressionar: ctrl.podeConfirmar
-                  ? () => _confirmar(context)
-                  : null,
+            builder: (context, _) => Row(
+              children: [
+                if (ctrl.corte != null) ...[
+                  PrecoHud(ctrl.corte!.preco, hud: false),
+                  const SizedBox(width: Espaco.s4),
+                ],
+                Expanded(
+                  child: SaBotao.primario(
+                    rotulo: 'Confirmar',
+                    icone: Icons.check,
+                    carregando: ctrl.salvando,
+                    aoPressionar: ctrl.podeConfirmar
+                        ? () => _confirmar(context)
+                        : null,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -80,7 +89,7 @@ class AgendarView extends StatelessWidget {
   }
 }
 
-/// Cartão selecionável usado nas escolhas.
+/// Cartão selecionável usado nas escolhas de barbeiro e dia.
 class _Opcao extends StatelessWidget {
   final bool selecionado;
   final bool habilitado;
@@ -112,7 +121,6 @@ class _Opcao extends StatelessWidget {
               color: selecionado ? Cores.grove : Cores.lineStrong,
               width: selecionado ? 3 : 2,
             ),
-            boxShadow: selecionado ? Sombras.hard : null,
           ),
           child: Material(
             type: MaterialType.transparency,
@@ -124,6 +132,15 @@ class _Opcao extends StatelessWidget {
   }
 }
 
+/// Deixa a foto em tons de cinza quando o barbeiro não faz o serviço.
+const _cinza = ColorFilter.matrix([
+  0.2126, 0.7152, 0.0722, 0, 0,
+  0.2126, 0.7152, 0.0722, 0, 0,
+  0.2126, 0.7152, 0.0722, 0, 0,
+  0, 0, 0, 1, 0,
+]);
+const _semFiltro = ColorFilter.mode(Colors.transparent, BlendMode.dst);
+
 class _EscolhaBarbeiro extends StatelessWidget {
   final AgendamentoController ctrl;
 
@@ -132,44 +149,73 @@ class _EscolhaBarbeiro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final barbeiros = g<BarbeiroController>().barbeiros;
-    return SizedBox(
-      height: 132,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
-        itemCount: barbeiros.length,
-        separatorBuilder: (_, _) => const SizedBox(width: Espaco.s3),
-        itemBuilder: (context, i) {
-          final b = barbeiros[i];
-          final sel = ctrl.barbeiro?.id == b.id;
-          return SizedBox(
-            width: 104,
-            child: _Opcao(
-              selecionado: sel,
-              rotuloSemantico: 'Barbeiro ${b.nome}',
-              onTap: () => ctrl.escolherBarbeiro(b),
-              child: Padding(
-                padding: const EdgeInsets.all(Espaco.s2),
-                child: Column(
-                  children: [
-                    FotoMoldura(b.foto, tamanho: 72),
-                    const SizedBox(height: Espaco.s2),
-                    Text(
-                      b.nome.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Estilos.displayMd.copyWith(
-                        fontSize: 16,
-                        color: sel ? Cores.grove : Cores.ink,
-                      ),
+    final corte = ctrl.corte;
+    bool faz(Barbeiro b) => corte == null || b.cortes.contains(corte.id);
+    final algumIndisponivel = !barbeiros.every(faz);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            for (final b in barbeiros) ...[
+              if (b != barbeiros.first) const SizedBox(width: Espaco.s3),
+              Expanded(
+                child: _Opcao(
+                  selecionado: ctrl.barbeiro?.id == b.id,
+                  habilitado: faz(b),
+                  rotuloSemantico:
+                      'Barbeiro ${b.nome}'
+                      '${faz(b) ? '' : ', não faz ${corte!.nome}'}',
+                  onTap: () => ctrl.escolherBarbeiro(b),
+                  child: Padding(
+                    padding: const EdgeInsets.all(Espaco.s2),
+                    child: Column(
+                      children: [
+                        AspectRatio(
+                          aspectRatio: 1,
+                          child: ColorFiltered(
+                            colorFilter: faz(b) ? _semFiltro : _cinza,
+                            child: FotoMoldura(
+                              b.foto,
+                              tamanho: double.infinity,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: Espaco.s2),
+                        Text(
+                          b.nome.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Estilos.displayMd.copyWith(
+                            fontSize: 16,
+                            color: ctrl.barbeiro?.id == b.id
+                                ? Cores.grove
+                                : Cores.ink,
+                          ),
+                        ),
+                        // Linha fixa para os cartões terem a mesma altura.
+                        Text(
+                          faz(b) ? ' ' : 'NÃO FAZ',
+                          style: Estilos.label.copyWith(fontSize: 9),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
-      ),
+            ],
+          ],
+        ),
+        if (algumIndisponivel) ...[
+          const SizedBox(height: Espaco.s2),
+          Text(
+            'Os apagados não fazem ${corte!.nome}. '
+            'Troca ou desmarca o serviço pra liberar.',
+            style: Estilos.bodySm,
+          ),
+        ],
+      ],
     );
   }
 }
@@ -182,49 +228,22 @@ class _EscolhaCorte extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<Corte> cortes = ctrl.barbeiro == null
-        ? g<CorteController>().cortes
+        ? g<CorteController>().todos
         : g<BarbeiroController>().cortesDe(ctrl.barbeiro!);
 
-    return SizedBox(
-      height: 152,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
-        itemCount: cortes.length,
-        separatorBuilder: (_, _) => const SizedBox(width: Espaco.s3),
-        itemBuilder: (context, i) {
-          final c = cortes[i];
-          final sel = ctrl.corte?.id == c.id;
-          return SizedBox(
-            width: 112,
-            child: _Opcao(
-              selecionado: sel,
-              rotuloSemantico: '${c.nome}, ${Formatos.preco(c.preco)}',
-              onTap: () => ctrl.escolherCorte(c),
-              child: Padding(
-                padding: const EdgeInsets.all(Espaco.s2),
-                child: Column(
-                  children: [
-                    FotoMoldura(c.imagem, tamanho: 64),
-                    const SizedBox(height: Espaco.s1),
-                    Text(
-                      c.nome.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Estilos.displayMd.copyWith(
-                        fontSize: 15,
-                        color: sel ? Cores.grove : Cores.ink,
-                      ),
-                    ),
-                    Text(Formatos.duracao(c.duracaoMin), style: Estilos.label),
-                    PrecoHud(c.preco, hud: false, tamanho: 17),
-                  ],
-                ),
-              ),
+    return Wrap(
+      spacing: Espaco.s2,
+      runSpacing: Espaco.s2,
+      children: [
+        for (final c in cortes)
+          ChoiceChip(
+            label: Text(
+              '${c.nome.toUpperCase()} · ${Formatos.preco(c.preco)}',
             ),
-          );
-        },
-      ),
+            selected: ctrl.corte?.id == c.id,
+            onSelected: (sel) => ctrl.escolherCorte(sel ? c : null),
+          ),
+      ],
     );
   }
 }
@@ -238,54 +257,57 @@ class _EscolhaDia extends StatelessWidget {
   Widget build(BuildContext context) {
     final barbeiro = ctrl.barbeiro;
     if (barbeiro == null) {
-      return const _Dica('Escolhe o barbeiro pra ver os dias que ele atende.');
+      return const Text(
+        'Escolhe o barbeiro primeiro.',
+        style: Estilos.bodySm,
+      );
     }
 
-    return SizedBox(
-      height: 76,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
-        itemCount: ctrl.diasDaSemana.length,
-        separatorBuilder: (_, _) => const SizedBox(width: Espaco.s2),
-        itemBuilder: (context, i) {
-          final d = ctrl.diasDaSemana[i];
-          final atende = barbeiro.atendeNo(d);
-          final sel = ctrl.dia == d;
-          return SizedBox(
-            width: 60,
-            child: _Opcao(
-              selecionado: sel,
-              habilitado: atende,
-              rotuloSemantico:
-                  '${Formatos.dataLonga(d)}${atende ? '' : ', sem atendimento'}',
-              onTap: () => ctrl.escolherDia(d),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    i == 0 ? 'HOJE' : Formatos.diaCurto(d),
-                    style: Estilos.label.copyWith(
-                      fontSize: 8,
-                      color: sel ? Cores.grove : Cores.inkMuted,
+    final dias = ctrl.diasDaSemana;
+    return Row(
+      children: [
+        for (var i = 0; i < dias.length; i++) ...[
+          if (i > 0) const SizedBox(width: Espaco.s1),
+          Expanded(
+            child: Builder(
+              builder: (context) {
+                final d = dias[i];
+                final atende = barbeiro.atendeNo(d);
+                final sel = ctrl.dia == d;
+                return _Opcao(
+                  selecionado: sel,
+                  habilitado: atende,
+                  rotuloSemantico:
+                      '${Formatos.dataLonga(d)}'
+                      '${atende ? '' : ', sem atendimento'}',
+                  onTap: () => ctrl.escolherDia(d),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: Espaco.s2),
+                    child: Column(
+                      children: [
+                        Text(
+                          i == 0 ? 'HOJE' : Formatos.diaCurto(d),
+                          style: Estilos.label.copyWith(
+                            fontSize: 9,
+                            color: sel ? Cores.grove : Cores.inkMuted,
+                          ),
+                        ),
+                        Text(
+                          '${d.day}',
+                          style: Estilos.displayMd.copyWith(
+                            fontSize: 22,
+                            color: sel ? Cores.grove : Cores.ink,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Text(
-                    '${d.day}',
-                    style: Estilos.displayMd.copyWith(
-                      color: sel ? Cores.grove : Cores.ink,
-                    ),
-                  ),
-                  Text(
-                    Formatos.meses[d.month - 1].toUpperCase(),
-                    style: Estilos.label.copyWith(fontSize: 8),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
-      ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -300,151 +322,31 @@ class _EscolhaHora extends StatelessWidget {
     final barbeiro = ctrl.barbeiro;
     final dia = ctrl.dia;
     if (barbeiro == null || dia == null) {
-      return const _Dica(
-        'Escolhe o barbeiro e o dia pra ver os horários livres.',
-      );
+      return const Text('Escolhe o barbeiro e o dia.', style: Estilos.bodySm);
     }
 
     final livres = DadosMock.horarios
         .where((h) => ctrl.horarioLivre(barbeiro, dia, h))
-        .length;
+        .toList();
+    if (livres.isEmpty) {
+      return const Text(
+        'Agenda lotada nesse dia. Tenta outro.',
+        style: Estilos.bodySm,
+      );
+    }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Wrap(
+      spacing: Espaco.s2,
+      runSpacing: Espaco.s2,
       children: [
-        Wrap(
-          spacing: Espaco.s2,
-          runSpacing: Espaco.s2,
-          children: [
-            for (final h in DadosMock.horarios)
-              Builder(
-                builder: (context) {
-                  final livre = ctrl.horarioLivre(barbeiro, dia, h);
-                  final sel = ctrl.hora == h;
-                  return ChoiceChip(
-                    label: Text(
-                      '${h.toString().padLeft(2, '0')}:00',
-                      style: Estilos.menu.copyWith(
-                        fontSize: 10,
-                        color: sel
-                            ? Cores.onGrove
-                            : livre
-                            ? Cores.ink
-                            : Cores.inkMuted,
-                        decoration: livre ? null : TextDecoration.lineThrough,
-                      ),
-                    ),
-                    tooltip: livre ? null : 'Ocupado',
-                    selected: sel,
-                    onSelected: livre ? (_) => ctrl.escolherHora(h) : null,
-                  );
-                },
-              ),
-          ],
-        ),
-        const SizedBox(height: Espaco.s2),
-        Text(
-          livres == 0
-              ? 'Agenda lotada nesse dia. Tenta outro.'
-              : '$livres horários livres · os riscados já estão ocupados.',
-          style: Estilos.caption,
-        ),
+        for (final h in livres)
+          ChoiceChip(
+            key: ValueKey('hora-$h'),
+            label: Text('${h.toString().padLeft(2, '0')}:00'),
+            selected: ctrl.hora == h,
+            onSelected: (_) => ctrl.escolherHora(h),
+          ),
       ],
-    );
-  }
-}
-
-class _Resumo extends StatelessWidget {
-  final AgendamentoController ctrl;
-
-  const _Resumo(this.ctrl);
-
-  @override
-  Widget build(BuildContext context) {
-    String ou(String? v) => v ?? '—';
-
-    return Painel(
-      destaque: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text('RESUMO DA MISSÃO', style: Estilos.label),
-          const SizedBox(height: Espaco.s2),
-          _Linha('Barbeiro', ou(ctrl.barbeiro?.nome)),
-          _Linha('Serviço', ou(ctrl.corte?.nome)),
-          _Linha('Dia', ctrl.dia == null ? '—' : Formatos.dataLonga(ctrl.dia!)),
-          _Linha(
-            'Horário',
-            ctrl.hora == null
-                ? '—'
-                : '${ctrl.hora.toString().padLeft(2, '0')}:00',
-          ),
-          const Divider(height: Espaco.s6, thickness: 2),
-          Row(
-            children: [
-              const Expanded(child: Text('TOTAL', style: Estilos.label)),
-              PrecoHud(ctrl.corte?.preco ?? 0),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Linha extends StatelessWidget {
-  final String rotulo;
-  final String valor;
-
-  const _Linha(this.rotulo, this.valor);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 92,
-            child: Text(rotulo.toUpperCase(), style: Estilos.label),
-          ),
-          Expanded(
-            child: Text(
-              valor,
-              style: Estilos.body.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Dica extends StatelessWidget {
-  final String texto;
-
-  const _Dica(this.texto);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(Espaco.s3),
-      decoration: BoxDecoration(
-        color: Cores.breathSoft,
-        border: Border.all(color: Cores.breath, width: 2),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.info_outline, color: Cores.breath, size: 20),
-          const SizedBox(width: Espaco.s2),
-          Expanded(
-            child: Text(
-              texto,
-              style: Estilos.bodySm.copyWith(color: Cores.breath),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

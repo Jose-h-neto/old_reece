@@ -36,10 +36,7 @@ class _RecuperarSenhaViewState extends State<RecuperarSenhaView> {
 
   Future<void> _recuperar() async {
     FocusScope.of(context).unfocus();
-    if (!_form.currentState!.validate()) {
-      mostrarMensagem(context, 'Confere o e-mail informado.', erro: true);
-      return;
-    }
+    if (!_form.currentState!.validate()) return;
 
     final erro = await ctrl.recuperar(_email.text);
     if (!mounted) return;

@@ -42,16 +42,12 @@ class _AvaliarViewState extends State<AvaliarView> {
   }
 
   void _enviar() {
-    if (_estrelas == 0) {
-      mostrarMensagem(context, 'Dá pelo menos uma estrela, mano.', erro: true);
-      return;
-    }
     g<AgendamentoController>().avaliar(
       widget.agendamento,
       _estrelas,
       _comentario.text,
     );
-    mostrarMensagem(context, 'Avaliação enviada. Respeito +');
+    mostrarMensagem(context, 'Valeu pela avaliação!');
     Navigator.pop(context);
   }
 
@@ -85,7 +81,7 @@ class _AvaliarViewState extends State<AvaliarView> {
             ),
             const SizedBox(height: Espaco.s8),
             const Text(
-              'NÍVEL DE RESPEITO',
+              'TUA NOTA',
               textAlign: TextAlign.center,
               style: Estilos.label,
             ),
@@ -122,7 +118,7 @@ class _AvaliarViewState extends State<AvaliarView> {
             SaBotao.primario(
               rotulo: 'Enviar avaliação',
               icone: Icons.send,
-              aoPressionar: _enviar,
+              aoPressionar: _estrelas == 0 ? null : _enviar,
             ),
           ],
         ),

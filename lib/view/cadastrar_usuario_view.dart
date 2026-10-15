@@ -37,10 +37,7 @@ class _CadastrarUsuarioViewState extends State<CadastrarUsuarioView> {
 
   Future<void> _cadastrar() async {
     FocusScope.of(context).unfocus();
-    if (!_form.currentState!.validate()) {
-      mostrarMensagem(context, 'Confere os campos destacados.', erro: true);
-      return;
-    }
+    if (!_form.currentState!.validate()) return;
 
     final erro = await ctrl.cadastrar(
       nome: _nome.text,

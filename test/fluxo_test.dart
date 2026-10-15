@@ -57,13 +57,13 @@ void main() {
 
     // Início
     expect(find.text('E aí, Carl'), findsWidgets);
-    expect(find.text('NENHUMA MISSÃO MARCADA'), findsWidgets);
+    expect(find.text('Nenhum horário marcado ainda.'), findsOneWidget);
 
     // Agendar
-    await tocar(tester, find.text('AGENDAR HORÁRIO'));
-    expect(find.text('NOVA MISSÃO'), findsOneWidget);
+    await tocar(tester, botao('AGENDAR HORÁRIO').first);
+    expect(find.text('1. BARBEIRO'), findsOneWidget);
     await tocar(tester, find.text('OLD REECE').last);
-    await tocar(tester, find.text('HIGH FADE').first);
+    await tocar(tester, find.textContaining('HIGH FADE').first);
 
     // Primeiro dia em que o Reece atende e primeiro horário livre.
     final dias = find.descendant(
@@ -74,20 +74,23 @@ void main() {
             w.properties.enabled == true &&
             w.properties.button == true &&
             (w.properties.label ?? '').contains(', ') &&
-            !(w.properties.label ?? '').startsWith('Barbeiro') &&
-            !(w.properties.label ?? '').contains('R\$'),
+            !(w.properties.label ?? '').startsWith('Barbeiro'),
       ),
     );
     expect(dias, findsWidgets);
     await tocar(tester, dias.at(1));
 
+    // Só os horários livres aparecem, cada um com a chave "hora-<h>".
     final livres = find.byWidgetPredicate(
-      (w) => w is ChoiceChip && w.onSelected != null,
+      (w) =>
+          w is ChoiceChip &&
+          w.key is ValueKey<String> &&
+          (w.key as ValueKey<String>).value.startsWith('hora-'),
     );
     expect(livres, findsWidgets);
     await tocar(tester, livres.first);
 
-    await tocar(tester, find.text('INICIAR MISSÃO'));
+    await tocar(tester, botao('CONFIRMAR'));
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
     expect(find.text('MISSÃO CUMPRIDA!'), findsWidgets);
@@ -95,20 +98,20 @@ void main() {
     // Agenda
     await tocar(tester, find.text('VER MINHA AGENDA'));
     expect(find.text('MINHA AGENDA'), findsOneWidget);
-    expect(find.text('AGENDADO'), findsOneWidget);
+    expect(find.text('CANCELAR'), findsOneWidget);
 
     await tocar(tester, find.text('CANCELAR'));
     await tocar(tester, find.text('CANCELAR HORÁRIO'));
-    expect(find.text('AGENDADO'), findsNothing);
+    expect(find.text('CANCELAR'), findsNothing);
 
     // Perfil: nome curto é rejeitado; nome válido atualiza o app.
     await tocar(tester, find.byTooltip('Meu perfil'));
     await tester.enterText(find.byType(TextFormField).first, 'CJ');
-    await tocar(tester, find.text('SALVAR ALTERAÇÕES'));
+    await tocar(tester, botao('SALVAR'));
     expect(find.text('O nome precisa de pelo menos 3 letras.'), findsOneWidget);
 
     await tester.enterText(find.byType(TextFormField).first, 'Carlão Johnson');
-    await tocar(tester, find.text('SALVAR ALTERAÇÕES'));
+    await tocar(tester, botao('SALVAR'));
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
     expect(g<AuthController>().usuario?.nome, 'Carlão Johnson');
@@ -118,6 +121,33 @@ void main() {
     await tester.drag(find.byType(ListView).first, const Offset(0, 3000));
     await tester.pumpAndSettle();
     expect(find.text('E aí, Carlão'), findsWidgets);
+  });
+
+  testWidgets('barbeiro que não faz o serviço escolhido fica indisponível', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.6;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(const MainApp());
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'cj@oldreece.com');
+    await tester.enterText(find.byType(TextFormField).at(1), '123456');
+    await tocar(tester, find.text('ENTRAR'));
+
+    // High Fade (em alta) não é feito pelo Ryder.
+    await tocar(tester, find.text('HIGH FADE').first);
+    expect(find.text('NÃO FAZ'), findsOneWidget);
+    expect(
+      find.text('Os apagados não fazem High Fade. '
+          'Troca ou desmarca o serviço pra liberar.'),
+      findsOneWidget,
+    );
+
+    // Desmarcar o serviço libera todo mundo.
+    await tocar(tester, find.textContaining('HIGH FADE').first);
+    expect(find.text('NÃO FAZ'), findsNothing);
   });
 
   testWidgets('telas de barbeiros, cortes, cadastro, recuperar e sobre abrem', (
@@ -171,10 +201,8 @@ void main() {
     await tester.tapAt(const Offset(20, 20));
     await tester.pumpAndSettle();
 
-    final scaffold = tester.firstState<ScaffoldState>(find.byType(Scaffold));
-    scaffold.openDrawer();
-    await tester.pumpAndSettle();
-    await tocar(tester, find.text('Sobre'));
+    await tocar(tester, find.byTooltip('Meu perfil'));
+    await tocar(tester, find.text('Sobre o app'));
     expect(find.text('OBJETIVO'), findsOneWidget);
   });
 }
